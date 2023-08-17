@@ -85,8 +85,10 @@
                         (plane.vertices ? (' vertices: ' + plane.vertices.length) : '') + // number[3*n], per latest spec
                         '\n';
                 });
+                showHUD(msg);
+            }else{
+                showHUD("no PLanes detected")
             }
-            showHUD(msg);
         }, 10000)
 
 
