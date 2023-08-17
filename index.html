@@ -17,24 +17,32 @@
 <body>
     <div id="debug">
         <a-scene>
-            <a-assets vr-mode-ui='enabled: false'>
+            <a-assets vr-mode-ui='enabled: false' ar="worldSensing:true">
                 <a-asset id="cesium-man" src="CesiumMan.glb"></a-asset>
             </a-assets>
             <a-entity id="walker" gltf-model="#cesium-man" position="0 0 -5" scale="0.5 0.5 0.5" animation-mixer>
             </a-entity>
-            <a-camera ar-raycaster raycaster cursor="fuse:false"> </a-camera>
-            <a-ring id="cursor" radius-inner="0.1" radius-outer="0.2" color="teal" position="0 -0.8 -5" rotation="-90 0 0">
+            <a-camera ar-raycaster raycaster cursor="fuse:false">
+                <a-text id="hud" scale="0.01 0.01 0.01" position="0 -0.025 -0.1" color="yellow" align="center"
+                    value="Hi there"></a-text>
+            </a-camera>
+            <a-ring id="cursor" radius-inner="0.1" radius-outer="0.2" color="teal" position="0 -0.8 -5"
+                rotation="-90 0 0">
         </a-scene>
     </div>
     <script type="text/javascript">
 
+
+
         function onSceneLoaded() {
+            var sc = document.querySelector('a-scene');
+            function showHUD(msg) { sc.querySelector('#hud').setAttribute('value', msg); }
 
             const onAddedPlanes = (evt) => {
                 const debug = document.querySelector('#debug')
                 debug.style.color = "white"
                 var str = ""
-                
+
                 evt.detail.anchors.forEach((anc) => {
                     str += anc.identifier
                 })
@@ -44,7 +52,7 @@
             }
             const scenes = AFRAME.scenes[0]
 
-            scenes.addEventListener('anchorsadded',onAddedPlanes)
+            scenes.addEventListener('anchorsadded', onAddedPlanes)
 
             const raycaster = document.querySelector('[ar-raycaster]');
             const cursor = document.querySelector('#cursor');
@@ -53,9 +61,38 @@
             });
 
         }
+
+        setTimeout(() => {
+            var sc = document.querySelector('a-scene');
+            console.log(sc)
+            var planes = sc.components['ar-planes'].getPlanes();
+            if (planes) {
+                var keys = Object.keys(planes);
+                var msg = '(' + keys.length + ': ' + keys.join(',') + ')\n\n';
+
+                planes.forEach(function (plane) {
+                    // Decompose into pos / quat / scale, and make euler.
+                    tempMat4.fromArray(plane.modelMatrix);
+                    tempMat4.decompose(tempPos, tempQuat, tempScale);
+                    tempEuler.setFromQuaternion(tempQuat);
+
+                    // Write out what we got, for debugging.
+                    msg +=
+                        '\nidentifier: ' + plane.id + // string, per latest spec
+                        ' ' + JSON.stringify(tempPos) +
+                        ' ' + plane.extent + '\n' + // number[2], per latest spec
+                        ' ' + JSON.stringify(tempEuler.toVector3().multiplyScalar(THREE.Math.RAD2DEG)) +
+                        (plane.vertices ? (' vertices: ' + plane.vertices.length) : '') + // number[3*n], per latest spec
+                        '\n';
+                });
+            }
+            showHUD(msg);
+        }, 10000)
+
+
         const scene = document.querySelector('a-scene');
         scene.addEventListener('loaded', onSceneLoaded);
-       
+
     </script>
 </body>
 
